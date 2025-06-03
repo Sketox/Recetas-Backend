@@ -1,2 +1,3 @@
 # Evita subir variables secretas
 .env
+node_modules/
