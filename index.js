@@ -53,9 +53,15 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     const db = await connectDB();
-    const recipeCollection = db.collection("recipes");
 
-    // Inyectar la colección en el servicio
+    // Prueba adicional: listar colecciones
+    const collections = await db.listCollections().toArray();
+    console.log(
+      "📚 Colecciones disponibles:",
+      collections.map((c) => c.name)
+    );
+
+    const recipeCollection = db.collection("recipes");
     recipeService.setCollection(recipeCollection);
     console.log("✅ Recipe collection configurada correctamente");
 

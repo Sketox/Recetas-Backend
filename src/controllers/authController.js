@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
 const UserDTO = require("../DTO/dto-user.dto");
+const connectDB = require("../../config/db"); // Ruta corregida
 
 const register = async (req, res) => {
   const userDTO = new UserDTO(req.body);
@@ -11,9 +11,14 @@ const register = async (req, res) => {
   }
 
   try {
+    const db = await connectDB();
+    const usersCollection = db.collection("users");
+
     // Verificar si el usuario ya existe
-    let user = await User.findOne({ email: userDTO.email });
-    if (user) {
+    const existingUser = await usersCollection.findOne({
+      email: userDTO.email,
+    });
+    if (existingUser) {
       return res.status(400).json({ error: "El usuario ya existe" });
     }
 
@@ -22,18 +27,20 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(userDTO.password, salt);
 
     // Crear nuevo usuario
-    user = new User({
+    const newUser = {
       name: userDTO.name,
       email: userDTO.email,
       password: hashedPassword,
-    });
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-    await user.save();
+    const result = await usersCollection.insertOne(newUser);
 
     // Generar JWT
     const payload = {
       user: {
-        id: user.id,
+        id: result.insertedId.toString(),
       },
     };
 
@@ -42,13 +49,18 @@ const register = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "1h" },
       (err, token) => {
-        if (err) throw err;
+        if (err) {
+          console.error("❌ Error al generar JWT:", err);
+          return res.status(500).json({ error: "Error en el servidor" });
+        }
         res.status(201).json({ token });
       }
     );
   } catch (error) {
-    console.error("Error en registro:", error);
-    res.status(500).json({ error: "Error en el servidor" });
+    console.error("❌ Error en registro:", error);
+    res
+      .status(500)
+      .json({ error: "Error en el servidor", details: error.message });
   }
 };
 
@@ -56,12 +68,15 @@ const login = async (req, res) => {
   const userDTO = new UserDTO(req.body);
 
   if (!userDTO.isValidLogin()) {
-    return res.status(400).json({ error: "Credenciales inválidas" });
+    return res.status(400).json({ error: "Datos inválidos" });
   }
 
   try {
-    // Verificar usuario
-    const user = await User.findOne({ email: userDTO.email });
+    const db = await connectDB();
+    const usersCollection = db.collection("users");
+
+    // Verificar si el usuario existe
+    const user = await usersCollection.findOne({ email: userDTO.email });
     if (!user) {
       return res.status(400).json({ error: "Credenciales inválidas" });
     }
@@ -75,7 +90,7 @@ const login = async (req, res) => {
     // Generar JWT
     const payload = {
       user: {
-        id: user.id,
+        id: user._id.toString(),
       },
     };
 
@@ -84,14 +99,21 @@ const login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "1h" },
       (err, token) => {
-        if (err) throw err;
-        res.json({ token });
+        if (err) {
+          console.error("❌ Error al generar JWT:", err);
+          return res.status(500).json({ error: "Error en el servidor" });
+        }
+        res.status(200).json({ token });
       }
     );
   } catch (error) {
-    console.error("Error en login:", error);
-    res.status(500).json({ error: "Error en el servidor" });
+    console.error("❌ Error en login:", error);
+    res
+      .status(500)
+      .json({ error: "Error en el servidor", details: error.message });
   }
 };
+
+module.exports = { login };
 
 module.exports = { register, login };
