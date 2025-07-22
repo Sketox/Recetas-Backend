@@ -4,6 +4,7 @@ const recipeRoutes = require("./src/routes/recipes");
 const deepseekChat = require("./src/routes/deepseekChat");
 const deepseekDiet = require("./src/routes/deepseekDiet");
 const recipeService = require("./src/services/recipeService");
+const authRoutes = require("./src/routes/auth");
 require("dotenv").config();
 
 // Configuración inicial
@@ -26,9 +27,10 @@ app.use((req, res, next) => {
 });
 
 // Rutas principales
-app.use("/api/recipes", recipeRoutes);
-app.use("/api/ai/", deepseekChat);
+app.use("/api/auth", authRoutes); // Rutas de autenticación (públicas)
+app.use("/api/ai/", deepseekChat); // Rutas de IA
 app.use("/api/ai/", deepseekDiet);
+app.use("/api/recipes", recipeRoutes); // Rutas de recetas (protegidas)
 
 // Ruta de verificación de salud
 app.get("/health", (req, res) => {
@@ -61,7 +63,12 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
       console.log(`📚 Endpoints disponibles:`);
-      console.log(`- GET /api/recipes - Obtener recetas`);
+      console.log(`- POST /api/auth/register - Registrar usuario`);
+      console.log(`- POST /api/auth/login - Iniciar sesión`);
+      console.log(`- GET /api/recipes - Obtener recetas (protegido)`);
+      console.log(`- POST /api/recipes - Crear receta (protegido)`);
+      console.log(`- PUT /api/recipes/:id - Actualizar receta (protegido)`);
+      console.log(`- DELETE /api/recipes/:id - Eliminar receta (protegido)`);
       console.log(`- POST /api/ai/chat - Chat con el chef`);
       console.log(`- POST /api/ai/diet - Plan de dieta personalizado`);
       console.log(`- GET /health - Verificar estado del servidor`);

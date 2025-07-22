@@ -11,6 +11,7 @@ class RecipeDTO {
     this.category = data.category;
     this.imageUrl = data.imageUrl;
     this.rating = data.rating;
+    this.userId = data.userId;
   }
 
   isValid() {
@@ -29,6 +30,7 @@ class RecipeDTO {
       categories.includes(this.category) &&
       typeof this.imageUrl === "string" &&
       typeof this.rating === "number" &&
+      typeof this.userId === "string" &&
       this.rating >= 1 &&
       this.rating <= 5
     );

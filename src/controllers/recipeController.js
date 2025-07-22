@@ -1,8 +1,14 @@
 const RecipeDTO = require("../DTO/dto-recipes.dto");
 const recipeService = require("../services/recipeService");
+const { ObjectId } = require("mongodb");
 
 const createRecipe = async (req, res) => {
-  const dto = new RecipeDTO(req.body);
+  const recipeData = {
+    ...req.body,
+    userId: req.user.id, // Agregar ID de usuario desde el token JWT
+  };
+
+  const dto = new RecipeDTO(recipeData);
 
   if (!dto.isValid()) {
     return res.status(400).json({ error: "Invalid recipe data" });
@@ -27,7 +33,56 @@ const getRecipes = async (req, res) => {
   }
 };
 
+const updateRecipe = async (req, res) => {
+  const { id } = req.params;
+  const recipeData = req.body;
+
+  try {
+    const result = await recipeService.updateRecipe(
+      id,
+      recipeData,
+      req.user.id
+    );
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Recipe not found" });
+    }
+    res.json({ message: "Recipe updated" });
+  } catch (error) {
+    console.error("❌ Error in updateRecipe:", error);
+    if (error.message === "No autorizado") {
+      res
+        .status(403)
+        .json({ error: "No tienes permiso para actualizar esta receta" });
+    } else {
+      res.status(500).json({ error: "Failed to update recipe" });
+    }
+  }
+};
+
+const deleteRecipe = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await recipeService.deleteRecipe(id, req.user.id);
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "Recipe not found" });
+    }
+    res.json({ message: "Recipe deleted" });
+  } catch (error) {
+    console.error("❌ Error in deleteRecipe:", error);
+    if (error.message === "No autorizado") {
+      res
+        .status(403)
+        .json({ error: "No tienes permiso para eliminar esta receta" });
+    } else {
+      res.status(500).json({ error: "Failed to delete recipe" });
+    }
+  }
+};
+
 module.exports = {
   createRecipe,
   getRecipes,
+  updateRecipe,
+  deleteRecipe,
 };

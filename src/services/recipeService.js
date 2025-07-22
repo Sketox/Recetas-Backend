@@ -25,6 +25,33 @@ async function getRecipes() {
   }));
 }
 
+async function updateRecipe(id, data, userId) {
+  const recipe = await recipeCollection.findOne({ _id: new ObjectId(id) });
+
+  // Verificar propiedad
+  if (recipe.userId !== userId) {
+    throw new Error("No autorizado");
+  }
+
+  const result = await recipeCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { ...data, updatedAt: new Date() } }
+  );
+  return result;
+}
+
+async function deleteRecipe(id, userId) {
+  const recipe = await recipeCollection.findOne({ _id: new ObjectId(id) });
+
+  // Verificar propiedad
+  if (recipe.userId !== userId) {
+    throw new Error("No autorizado");
+  }
+
+  const result = await recipeCollection.deleteOne({ _id: new ObjectId(id) });
+  return result;
+}
+
 module.exports = {
   setCollection,
   createRecipe,
