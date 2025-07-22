@@ -1,6 +1,11 @@
 const jwt = require("jsonwebtoken");
 
 const authMiddleware = async (req, res, next) => {
+  // Permitir GET sin autenticación
+  if (req.method === "GET") {
+    return next();
+  }
+
   // Obtener token del header
   const token = req.header("Authorization")?.replace("Bearer ", "");
 
@@ -9,7 +14,6 @@ const authMiddleware = async (req, res, next) => {
   }
 
   try {
-    // Verificar token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded.user;
     next();
