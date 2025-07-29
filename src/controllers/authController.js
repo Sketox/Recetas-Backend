@@ -26,11 +26,25 @@ const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(userDTO.password, salt);
 
+    // Icono por defecto si no se proporciona
+    const defaultIcons = [
+      "face-smile",
+      "user-circle",
+      "bolt",
+      "sparkles",
+      "sun",
+      "fire",
+      "heart",
+    ];
+
+    const icon = userDTO.icon || defaultIcons[Math.floor(Math.random() * defaultIcons.length)];    
+    
     // Crear nuevo usuario
     const newUser = {
       name: userDTO.name,
       email: userDTO.email,
       password: hashedPassword,
+      icon,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -53,7 +67,7 @@ const register = async (req, res) => {
           console.error("❌ Error al generar JWT:", err);
           return res.status(500).json({ error: "Error en el servidor" });
         }
-        res.status(201).json({ token });
+        res.status(201).json({ token, icon });
       }
     );
   } catch (error) {
@@ -103,7 +117,7 @@ const login = async (req, res) => {
           console.error("❌ Error al generar JWT:", err);
           return res.status(500).json({ error: "Error en el servidor" });
         }
-        res.status(200).json({ token });
+        res.status(200).json({ token, icon: user.icon  });
       }
     );
   } catch (error) {

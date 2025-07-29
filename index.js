@@ -22,6 +22,7 @@ app.use(
   })
 );
 
+
 // ✅ Express básico
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
