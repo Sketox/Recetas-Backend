@@ -7,6 +7,7 @@ const authMiddleware = require("../middleware/authMiddleware");
 router.use(authMiddleware);
 
 router.get("/", recipeController.getRecipes);
+router.get("/my-recipes", recipeController.getMyRecipes);
 router.post("/", recipeController.createRecipe);
 router.put("/:id", recipeController.updateRecipe);
 router.delete("/:id", recipeController.deleteRecipe);

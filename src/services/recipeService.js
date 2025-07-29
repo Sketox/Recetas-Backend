@@ -25,6 +25,15 @@ async function getRecipes() {
   }));
 }
 
+async function getRecipesByUser(userId) {
+  const recipes = await recipeCollection.find({ userId }).toArray();
+  return recipes.map((r) => ({
+    ...r,
+    id: r._id.toString(),
+    _id: undefined,
+  }));
+}
+
 async function updateRecipe(id, data, userId) {
   const recipe = await recipeCollection.findOne({ _id: new ObjectId(id) });
 
@@ -56,4 +65,5 @@ module.exports = {
   setCollection,
   createRecipe,
   getRecipes,
+  getRecipesByUser, // <-- exporta el nuevo método
 };

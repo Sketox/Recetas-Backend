@@ -5,6 +5,7 @@ const deepseekChat = require("./src/routes/deepseekChat");
 const deepseekDiet = require("./src/routes/deepseekDiet");
 const recipeService = require("./src/services/recipeService");
 const authRoutes = require("./src/routes/auth");
+const userRoutes = require("./src/routes/user");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -32,6 +33,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/ai/chat", deepseekChat);
 app.use("/api/ai/diet", deepseekDiet);
 app.use("/api/recipes", recipeRoutes);
+app.use("/api/user", userRoutes);
 
 // ✅ Ruta de salud
 app.get("/health", (req, res) => {
@@ -70,6 +72,10 @@ const startServer = async () => {
       console.log(`📚 Endpoints disponibles:`);
       console.log(`- POST /api/auth/register`);
       console.log(`- POST /api/auth/login`);
+      console.log(`- GET /api/user/me`);
+      console.log(`- PUT /api/user/me`);
+      console.log(`- DELETE /api/user/me`);
+      console.log(`- GET /api/recipes/my-recipes`); // <-- ruta agregada correctamente
       console.log(`- GET /api/recipes`);
       console.log(`- POST /api/recipes`);
       console.log(`- PUT /api/recipes/:id`);

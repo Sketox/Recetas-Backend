@@ -33,6 +33,16 @@ const getRecipes = async (req, res) => {
   }
 };
 
+const getMyRecipes = async (req, res) => {
+  try {
+    const recipes = await recipeService.getRecipesByUser(req.user.id);
+    res.json(recipes);
+  } catch (error) {
+    console.error("❌ Error in getMyRecipes:", error);
+    res.status(500).json({ error: "Failed to retrieve user's recipes" });
+  }
+};
+
 const updateRecipe = async (req, res) => {
   const { id } = req.params;
   const recipeData = req.body;
@@ -85,4 +95,5 @@ module.exports = {
   getRecipes,
   updateRecipe,
   deleteRecipe,
+  getMyRecipes, // <-- exporta el nuevo controlador
 };
