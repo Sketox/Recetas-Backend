@@ -1,7 +1,20 @@
 const jwt = require("jsonwebtoken");
 
+const publicRoutes = [
+  { method: "GET", path: "/api/recipes" },
+];
+
 const authMiddleware = async (req, res, next) => {
-  // Obtener token del header
+  const isPublic = publicRoutes.some(
+    (route) =>
+      route.method === req.method &&
+      req.originalUrl.startsWith(route.path)
+  );
+
+  if (isPublic) {
+    return next();
+  }
+
   const token = req.header("Authorization")?.replace("Bearer ", "");
 
   if (!token) {

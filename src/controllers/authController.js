@@ -60,6 +60,7 @@ const register = async (req, res) => {
 
     jwt.sign(
       payload,
+      { id: user._id }, 
       process.env.JWT_SECRET,
       { expiresIn: "1h" },
       (err, token) => {

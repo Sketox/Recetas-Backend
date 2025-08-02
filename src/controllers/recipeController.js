@@ -34,6 +34,11 @@ const getRecipes = async (req, res) => {
 };
 
 const getMyRecipes = async (req, res) => {
+  // ✅ Validación para evitar errores si no hay usuario autenticado
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ error: "Usuario no autenticado" });
+  }
+
   try {
     const recipes = await recipeService.getRecipesByUser(req.user.id);
     res.json(recipes);
@@ -42,6 +47,7 @@ const getMyRecipes = async (req, res) => {
     res.status(500).json({ error: "Failed to retrieve user's recipes" });
   }
 };
+
 
 const updateRecipe = async (req, res) => {
   const { id } = req.params;
