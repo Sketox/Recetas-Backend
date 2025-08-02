@@ -1,16 +1,11 @@
 const jwt = require("jsonwebtoken");
 
 const authMiddleware = async (req, res, next) => {
-  // Permitir GET sin autenticación
-  if (req.method === "GET") {
-    return next();
-  }
-
   // Obtener token del header
   const token = req.header("Authorization")?.replace("Bearer ", "");
 
   if (!token) {
-    return res.status(401).json({ error: "Acceso denegado" });
+    return res.status(401).json({ error: "Acceso denegado. Token no proporcionado." });
   }
 
   try {
@@ -18,6 +13,7 @@ const authMiddleware = async (req, res, next) => {
     req.user = decoded.user;
     next();
   } catch (error) {
+    console.error("❌ Error al verificar token:", error);
     res.status(401).json({ error: "Token inválido" });
   }
 };
