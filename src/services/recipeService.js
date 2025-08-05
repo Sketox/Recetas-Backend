@@ -1,3 +1,5 @@
+const { ObjectId } = require("mongodb");
+
 let recipeCollection;
 
 function setCollection(collection) {
@@ -65,5 +67,7 @@ module.exports = {
   setCollection,
   createRecipe,
   getRecipes,
-  getRecipesByUser, // <-- exporta el nuevo método
+  getRecipesByUser,
+  updateRecipe,
+  deleteRecipe,
 };

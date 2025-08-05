@@ -4,18 +4,25 @@ const { ObjectId } = require("mongodb");
 
 const getProfile = async (req, res) => {
   try {
+    console.log("👤 Obteniendo perfil de usuario...");
+    console.log("🔑 req.user:", req.user);
+    
     // Validar existencia de req.user y req.user.id
     if (!req.user || !req.user.id) {
+      console.log("❌ Usuario no autenticado en req.user");
       return res.status(401).json({ error: "No autorizado" });
     }
 
     // Validar que el ID sea un ObjectId válido
     if (!ObjectId.isValid(req.user.id)) {
+      console.log("❌ ID de usuario inválido:", req.user.id);
       return res.status(400).json({ error: "ID de usuario inválido" });
     }
 
     const db = await connectDB();
     const users = db.collection("users");
+
+    console.log("🔍 Buscando usuario con ID:", req.user.id);
 
     const user = await users.findOne(
       { _id: new ObjectId(req.user.id) },
@@ -23,6 +30,7 @@ const getProfile = async (req, res) => {
     );
 
     if (!user) {
+      console.log("❌ Usuario no encontrado en la base de datos");
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
@@ -31,6 +39,7 @@ const getProfile = async (req, res) => {
       user.icon = "face-smile";
     }
 
+    console.log("✅ Usuario encontrado:", { id: user._id, name: user.name, email: user.email });
     res.json(user);
   } catch (error) {
     console.error("❌ Error en getProfile:", error);

@@ -20,18 +20,25 @@ class RecipeDTO {
 
     return (
       typeof this.title === "string" &&
+      this.title.trim().length > 0 &&
       typeof this.description === "string" &&
+      this.description.trim().length > 0 &&
       Array.isArray(this.ingredients) &&
+      this.ingredients.length > 0 &&
       Array.isArray(this.instructions) &&
+      this.instructions.length > 0 &&
       typeof this.prepTime === "number" &&
+      this.prepTime > 0 &&
       typeof this.cookTime === "number" &&
+      this.cookTime > 0 &&
       typeof this.servings === "number" &&
+      this.servings > 0 &&
       difficulties.includes(this.difficulty) &&
       categories.includes(this.category) &&
       typeof this.imageUrl === "string" &&
       typeof this.rating === "number" &&
       typeof this.userId === "string" &&
-      this.rating >= 1 &&
+      this.rating >= 0 &&
       this.rating <= 5
     );
   }

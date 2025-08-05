@@ -28,6 +28,18 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 🔍 Middleware de debug para ver qué llega
+app.use((req, res, next) => {
+  if (req.method === 'POST' && req.url.includes('/recipes')) {
+    console.log("🔍 DEBUG - Petición POST a recipes:");
+    console.log("- URL:", req.url);
+    console.log("- Headers:", req.headers);
+    console.log("- Body:", req.body);
+    console.log("- Raw body type:", typeof req.body);
+  }
+  next();
+});
+
 // ✅ Rutas bien separadas
 app.use("/api/auth", authRoutes);
 app.use("/api/ai/chat", deepseekChat);
