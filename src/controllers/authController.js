@@ -4,7 +4,7 @@ const UserDTO = require("../DTO/dto-user.dto");
 const connectDB = require("../../config/db"); // Ruta corregida
 
 const register = async (req, res) => {
-  const userDTO = new UserDTO(req.body);
+  const userDTO = new UserDTO(req.body); 
 
   if (!userDTO.isValidRegister()) {
     return res.status(400).json({ error: "Datos inválidos" });
