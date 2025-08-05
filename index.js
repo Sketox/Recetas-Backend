@@ -6,6 +6,7 @@ const deepseekDiet = require("./src/routes/deepseekDiet");
 const recipeService = require("./src/services/recipeService");
 const authRoutes = require("./src/routes/auth");
 const userRoutes = require("./src/routes/user");
+const favoritesRoutes = require("./src/routes/favorites");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -46,6 +47,26 @@ app.use("/api/ai/chat", deepseekChat);
 app.use("/api/ai/diet", deepseekDiet);
 app.use("/api/recipes", recipeRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/favorites", favoritesRoutes);
+
+// 🔍 Debug endpoint para ver todas las rutas
+app.get("/api/debug/routes", (req, res) => {
+  res.json({
+    message: "Rutas disponibles",
+    routes: [
+      "POST /api/auth/register",
+      "POST /api/auth/login", 
+      "GET /api/user/me",
+      "GET /api/recipes",
+      "POST /api/recipes",
+      "GET /api/recipes/my-recipes",
+      "POST /api/favorites",
+      "DELETE /api/favorites/:recipeId",
+      "GET /api/favorites",
+      "GET /api/favorites/check/:recipeId"
+    ]
+  });
+});
 
 // ✅ Ruta de salud
 app.get("/health", (req, res) => {

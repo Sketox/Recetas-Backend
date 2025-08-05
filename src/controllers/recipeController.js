@@ -7,18 +7,46 @@ const fs = require("fs");
 const createRecipe = async (req, res) => {
   console.log("📝 === CREAR RECETA ===");
   console.log("📝 req.body COMPLETO:", JSON.stringify(req.body, null, 2));
-  console.log("📝 req.headers:", req.headers);
+  console.log("� req.file:", req.file);
   console.log("👤 Usuario autenticado:", req.user);
 
+  let imageUrl = "";
+
+  // 📸 Si hay una imagen, subirla a Cloudinary
+  if (req.file) {
+    try {
+      console.log("🚀 Subiendo imagen a Cloudinary...");
+      const result = await uploadImage(req.file.path);
+      imageUrl = result.secure_url;
+      console.log("✅ Imagen subida exitosamente:", imageUrl);
+      
+      // 🗑️ Eliminar archivo temporal
+      fs.unlinkSync(req.file.path);
+    } catch (uploadError) {
+      console.error("❌ Error al subir imagen:", uploadError);
+      // Si falla la subida, eliminar archivo temporal y continuar sin imagen
+      if (req.file.path) {
+        fs.unlinkSync(req.file.path);
+      }
+    }
+  }
+
   const recipeData = {
-    ...req.body,
-    userId: req.user.id, // Agregar ID de usuario desde el token JWT
+    title: req.body.title,
+    description: req.body.description,
+    ingredients: JSON.parse(req.body.ingredients || '[]'),
+    instructions: JSON.parse(req.body.instructions || '[]'),
+    prepTime: parseInt(req.body.prepTime),
+    cookTime: parseInt(req.body.cookTime),
+    servings: parseInt(req.body.servings),
+    difficulty: req.body.difficulty,
+    category: req.body.category,
+    rating: parseInt(req.body.rating || '0'),
+    imageUrl: imageUrl, // Usar la URL de Cloudinary o string vacío
+    userId: req.user.id,
   };
 
-  console.log(
-    "📦 Datos completos para validar:",
-    JSON.stringify(recipeData, null, 2)
-  );
+  console.log("📦 Datos completos para validar:", JSON.stringify(recipeData, null, 2));
 
   const dto = new RecipeDTO(recipeData);
 
@@ -98,19 +126,72 @@ const getMyRecipes = async (req, res) => {
 };
 
 const updateRecipe = async (req, res) => {
+  console.log("📝 === ACTUALIZAR RECETA ===");
   const { id } = req.params;
-  const recipeData = req.body;
+  
+  console.log("🔍 ID de receta:", id);
+  console.log("📤 Datos recibidos:", req.body);
+  console.log("🖼️ Archivo recibido:", req.file ? req.file.filename : "No hay archivo");
+
+  // 🖼️ Manejo de imagen si se proporciona una nueva
+  let imageUrl = "";
+  if (req.file) {
+    try {
+      console.log("📤 Subiendo nueva imagen a Cloudinary...");
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "recetas-app",
+        quality: "auto",
+        fetch_format: "auto",
+      });
+      
+      imageUrl = result.secure_url;
+      console.log("✅ Nueva imagen subida exitosamente:", imageUrl);
+      
+      // 🗑️ Eliminar archivo temporal
+      fs.unlinkSync(req.file.path);
+    } catch (uploadError) {
+      console.error("❌ Error al subir nueva imagen:", uploadError);
+      // Si falla la subida, eliminar archivo temporal
+      if (req.file.path) {
+        fs.unlinkSync(req.file.path);
+      }
+    }
+  }
+
+  // Preparar datos de actualización
+  const updateData = {
+    title: req.body.title,
+    description: req.body.description,
+    ingredients: JSON.parse(req.body.ingredients || '[]'),
+    instructions: JSON.parse(req.body.instructions || '[]'),
+    prepTime: parseInt(req.body.prepTime),
+    cookTime: parseInt(req.body.cookTime),
+    servings: parseInt(req.body.servings),
+    difficulty: req.body.difficulty,
+    category: req.body.category,
+  };
+
+  // Solo agregar imageUrl si se proporcionó una nueva imagen
+  if (imageUrl) {
+    updateData.imageUrl = imageUrl;
+  }
+
+  console.log("📦 Datos de actualización:", JSON.stringify(updateData, null, 2));
 
   try {
     const result = await recipeService.updateRecipe(
       id,
-      recipeData,
+      updateData,
       req.user.id
     );
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: "Recipe not found" });
     }
-    res.json({ message: "Recipe updated" });
+    
+    // Obtener la receta actualizada para devolverla
+    const updatedRecipe = await recipeService.getRecipeById(id);
+    console.log("✅ Receta actualizada exitosamente");
+    res.json(updatedRecipe);
   } catch (error) {
     console.error("❌ Error in updateRecipe:", error);
     if (error.message === "No autorizado") {
@@ -144,10 +225,48 @@ const deleteRecipe = async (req, res) => {
   }
 };
 
+const getSearchSuggestions = async (req, res) => {
+  const { q } = req.query; // query de búsqueda
+  console.log("🔍 Búsqueda de sugerencias recibida:", q);
+  
+  if (!q || q.trim().length < 2) {
+    console.log("❌ Query muy corta o vacía");
+    return res.json([]);
+  }
+
+  try {
+    const searchTerm = q.trim();
+    console.log("🔍 Término de búsqueda:", searchTerm);
+    const suggestions = await recipeService.getSearchSuggestions(searchTerm);
+    console.log("✅ Sugerencias encontradas:", suggestions.length);
+    res.json(suggestions);
+  } catch (error) {
+    console.error("❌ Error in getSearchSuggestions:", error);
+    res.status(500).json({ error: "Failed to get search suggestions" });
+  }
+};
+
+const getRecipeById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const recipe = await recipeService.getRecipeById(id);
+    if (!recipe) {
+      return res.status(404).json({ error: "Recipe not found" });
+    }
+    res.json(recipe);
+  } catch (error) {
+    console.error("❌ Error in getRecipeById:", error);
+    res.status(500).json({ error: "Failed to get recipe" });
+  }
+};
+
 module.exports = {
   createRecipe,
   getRecipes,
   updateRecipe,
   deleteRecipe,
-  getMyRecipes, // <-- exporta el nuevo controlador
+  getMyRecipes,
+  getSearchSuggestions,
+  getRecipeById,
 };

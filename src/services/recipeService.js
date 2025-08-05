@@ -36,6 +36,18 @@ async function getRecipesByUser(userId) {
   }));
 }
 
+async function getRecipeById(id) {
+  const recipe = await recipeCollection.findOne({ _id: new ObjectId(id) });
+  if (!recipe) {
+    return null;
+  }
+  return {
+    ...recipe,
+    id: recipe._id.toString(),
+    _id: recipe._id.toString(), // Mantener ambos para compatibilidad
+  };
+}
+
 async function updateRecipe(id, data, userId) {
   const recipe = await recipeCollection.findOne({ _id: new ObjectId(id) });
 
@@ -63,11 +75,40 @@ async function deleteRecipe(id, userId) {
   return result;
 }
 
+async function getSearchSuggestions(searchTerm) {
+  const regex = new RegExp(searchTerm, 'i'); // Case insensitive
+  
+  // Buscar por título y por ingredientes
+  const recipes = await recipeCollection.find({
+    $or: [
+      { title: { $regex: regex } },
+      { ingredients: { $elemMatch: { $regex: regex } } }
+    ]
+  }, {
+    projection: { title: 1, ingredients: 1, imageUrl: 1, category: 1 }
+  }).limit(5).toArray();
+
+  // Formatear las sugerencias
+  const suggestions = recipes.map(recipe => ({
+    id: recipe._id.toString(),
+    title: recipe.title,
+    imageUrl: recipe.imageUrl,
+    category: recipe.category,
+    matchedIngredients: recipe.ingredients.filter(ingredient => 
+      regex.test(ingredient)
+    )
+  }));
+
+  return suggestions;
+}
+
 module.exports = {
   setCollection,
   createRecipe,
   getRecipes,
   getRecipesByUser,
+  getRecipeById,
   updateRecipe,
   deleteRecipe,
+  getSearchSuggestions,
 };

@@ -53,14 +53,11 @@ const register = async (req, res) => {
 
     // Generar JWT
     const payload = {
-      user: {
-        id: result.insertedId.toString(),
-      },
+      id: result.insertedId.toString(),
     };
 
     jwt.sign(
       payload,
-      { id: user._id }, 
       process.env.JWT_SECRET,
       { expiresIn: "1h" },
       (err, token) => {
@@ -68,6 +65,7 @@ const register = async (req, res) => {
           console.error("❌ Error al generar JWT:", err);
           return res.status(500).json({ error: "Error en el servidor" });
         }
+        console.log("✅ Usuario registrado exitosamente:", result.insertedId);
         res.status(201).json({ token, icon });
       }
     );
@@ -104,9 +102,7 @@ const login = async (req, res) => {
 
     // Generar JWT
     const payload = {
-      user: {
-        id: user._id.toString(),
-      },
+      id: user._id.toString(),
     };
 
     jwt.sign(
@@ -118,6 +114,7 @@ const login = async (req, res) => {
           console.error("❌ Error al generar JWT:", err);
           return res.status(500).json({ error: "Error en el servidor" });
         }
+        console.log("✅ Login exitoso para usuario:", user._id);
         res.status(200).json({ token, icon: user.icon  });
       }
     );

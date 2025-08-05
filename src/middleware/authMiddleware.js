@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 
 const publicRoutes = [
   { method: "GET", path: "/api/recipes", exact: true },
+  { method: "GET", path: "/api/recipes/search-suggestions", exact: false },
 ];
 
 const authMiddleware = async (req, res, next) => {
@@ -41,7 +42,7 @@ const authMiddleware = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("✅ Token verificado exitosamente:", decoded);
-    req.user = decoded.user;
+    req.user = { id: decoded.id }; // Estructura consistente
     next();
   } catch (error) {
     console.error("❌ Error al verificar token:", error);

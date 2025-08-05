@@ -8,9 +8,11 @@ const upload = require("../middleware/uploadMiddleware");
 router.use(authMiddleware);
 
 router.get("/", recipeController.getRecipes);
+router.get("/search-suggestions", recipeController.getSearchSuggestions);
 router.get("/my-recipes", recipeController.getMyRecipes);
+router.get("/:id", recipeController.getRecipeById);
 router.post("/", upload.single("image"), recipeController.createRecipe);
-router.put("/:id", recipeController.updateRecipe);
+router.put("/:id", upload.single("image"), recipeController.updateRecipe);
 router.delete("/:id", recipeController.deleteRecipe);
 
 module.exports = router;
