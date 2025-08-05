@@ -7,6 +7,7 @@ router.use(authMiddleware);
 
 router.get("/me", userController.getProfile);
 router.put("/me", userController.updateProfile);
+router.put("/me/icon", userController.updateIcon);
 router.delete("/me", userController.deleteProfile);
 
 module.exports = router;

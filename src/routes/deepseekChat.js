@@ -14,14 +14,19 @@ const apiClient = axios.create({
 });
 
 router.post("/", async (req, res) => {
+  console.log("🤖 === DEEPSEEK CHAT REQUEST ===");
+  console.log("📝 req.body:", req.body);
+  
   try {
     const { message } = req.body;
 
     if (!message) {
+      console.log("❌ Mensaje vacío");
       return res.status(400).json({ error: "El mensaje es requerido" });
     }
 
-    console.log("Preparando petición a DeepSeek API...");
+    console.log("🔑 API Key disponible:", !!process.env.DEEPSEEK_API_KEY);
+    console.log("📤 Enviando mensaje a DeepSeek:", message);
 
     const response = await apiClient.post(
       "/chat/completions",
@@ -30,7 +35,7 @@ router.post("/", async (req, res) => {
         messages: [
           {
             role: "user",
-            content: `Proporciona 3 recetas usando: ${message}. Devuelve solo JSON con: título, ingredientes, instrucciones`,
+            content: `Proporciona 3 recetas usando: ${message}. Devuelve solo JSON con formato: {"recetas": [{"titulo": "", "ingredientes": [], "instrucciones": []}]}`,
           },
         ],
         temperature: 0.7,
@@ -44,12 +49,15 @@ router.post("/", async (req, res) => {
       }
     );
 
-    console.log("Respuesta recibida. Status:", response.status);
+    console.log("✅ Respuesta recibida. Status:", response.status);
 
     const content = response.data.choices[0].message.content;
+    console.log("📦 Contenido recibido:", content);
+    
     const recipes = JSON.parse(content);
+    console.log("🍽️ Recetas parseadas:", recipes);
 
-    return res.json({ success: true, recipes });
+    return res.json({ success: true, recipes: recipes.recetas || recipes });
   } catch (error) {
     console.error("Error detallado:", {
       code: error.code,

@@ -7,6 +7,7 @@ const upload = require("../middleware/uploadMiddleware");
 
 // Public routes (no authentication required)
 router.get("/", optionalAuthMiddleware, recipeController.getRecipes);
+router.get("/categories", recipeController.getCategories);
 router.get("/search-suggestions", optionalAuthMiddleware, recipeController.getSearchSuggestions);
 
 // Protected routes (authentication required)

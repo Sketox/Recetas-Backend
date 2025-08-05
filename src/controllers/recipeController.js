@@ -274,6 +274,16 @@ const getRecipeById = async (req, res) => {
   }
 };
 
+const getCategories = async (req, res) => {
+  try {
+    const categories = await recipeService.getCategories();
+    res.json(categories);
+  } catch (error) {
+    console.error("❌ Error in getCategories:", error);
+    res.status(500).json({ error: "Failed to get categories" });
+  }
+};
+
 module.exports = {
   createRecipe,
   getRecipes,
@@ -282,4 +292,5 @@ module.exports = {
   getMyRecipes,
   getSearchSuggestions,
   getRecipeById,
+  getCategories,
 };

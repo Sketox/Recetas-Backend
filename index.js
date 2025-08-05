@@ -14,6 +14,10 @@ require("dotenv").config();
 const PORT = process.env.PORT || 5000;
 const app = express();
 
+app.listen(PORT, () => {
+  console.log(`✅ Servidor corriendo en puerto ${PORT}`);
+});
+
 // ✅ CORS correcto
 app.use(
   cors({
@@ -97,8 +101,12 @@ const startServer = async () => {
     );
 
     const recipeCollection = db.collection("recipes");
+    const userCollection = db.collection("users");
+    
     recipeService.setCollection(recipeCollection);
+    recipeService.setUserCollection(userCollection);
     console.log("✅ Recipe collection configurada correctamente");
+    console.log("✅ User collection configurada correctamente");
 
     app.listen(PORT, () => {
       console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
