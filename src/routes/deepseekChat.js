@@ -13,7 +13,7 @@ const apiClient = axios.create({
   },
 });
 
-router.post("/chat", async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { message } = req.body;
 

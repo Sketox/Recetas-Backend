@@ -3,6 +3,7 @@ class UserDTO {
     this.name = data.name;
     this.email = data.email;
     this.password = data.password;
+    this.icon = data.icon;
   }
 
   isValidRegister() {

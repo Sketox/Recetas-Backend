@@ -5,28 +5,61 @@ const { uploadImage } = require("../utils/cloudinary");
 const fs = require("fs");
 
 const createRecipe = async (req, res) => {
-  let imageUrl = "";
+  console.log("📝 === CREAR RECETA ===");
+  console.log("📝 req.body COMPLETO:", JSON.stringify(req.body, null, 2));
+  console.log("📝 req.headers:", req.headers);
+  console.log("👤 Usuario autenticado:", req.user);
+
+  const recipeData = {
+    ...req.body,
+    userId: req.user.id, // Agregar ID de usuario desde el token JWT
+  };
+
+  console.log(
+    "📦 Datos completos para validar:",
+    JSON.stringify(recipeData, null, 2)
+  );
+
+  const dto = new RecipeDTO(recipeData);
+
+  if (!dto.isValid()) {
+    console.log("❌ Validación fallida del DTO:");
+    console.log("- title:", typeof dto.title, dto.title);
+    console.log("- description:", typeof dto.description, dto.description);
+    console.log(
+      "- ingredients:",
+      Array.isArray(dto.ingredients),
+      dto.ingredients
+    );
+    console.log(
+      "- instructions:",
+      Array.isArray(dto.instructions),
+      dto.instructions
+    );
+    console.log("- prepTime:", typeof dto.prepTime, dto.prepTime);
+    console.log("- cookTime:", typeof dto.cookTime, dto.cookTime);
+    console.log("- servings:", typeof dto.servings, dto.servings);
+    console.log("- difficulty:", dto.difficulty);
+    console.log("- category:", dto.category);
+    console.log("- imageUrl:", typeof dto.imageUrl, dto.imageUrl);
+    console.log("- rating:", typeof dto.rating, dto.rating);
+    console.log("- userId:", typeof dto.userId, dto.userId);
+
+    return res.status(400).json({
+      error: "Invalid recipe data",
+      details:
+        "Revisa que todos los campos estén completos y sean del tipo correcto",
+    });
+  }
+
   try {
-    if (req.file) {
-      const result = await uploadImage(req.file.path);
-      imageUrl = result.secure_url;
-      fs.unlinkSync(req.file.path); // Elimina el archivo temporal
-    }
-
-    const recipeData = {
-      ...req.body,
-      userId: req.user.id,
-      imageUrl, // Guarda la URL de Cloudinary
-    };
-
-    const dto = new RecipeDTO(recipeData);
-
-    if (!dto.isValid()) {
-      return res.status(400).json({ error: "Invalid recipe data" });
-    }
-
-    const resultDb = await recipeService.createRecipe(dto);
-    res.status(201).json({ message: "Recipe created", id: resultDb.insertedId });
+    const result = await recipeService.createRecipe(dto);
+    console.log("✅ Receta creada exitosamente:", result.insertedId);
+    res.status(201).json({
+      message: "Recipe created successfully",
+      id: result.insertedId,
+      success: true,
+    });
   } catch (error) {
     console.error("❌ Error in createRecipe:", error);
     res.status(500).json({ error: "Failed to save recipe" });
@@ -44,8 +77,19 @@ const getRecipes = async (req, res) => {
 };
 
 const getMyRecipes = async (req, res) => {
+  console.log("📝 Obteniendo recetas del usuario...");
+  console.log("🔑 req.user:", req.user);
+
+  // ✅ Validación para evitar errores si no hay usuario autenticado
+  if (!req.user || !req.user.id) {
+    console.log("❌ Usuario no autenticado en getMyRecipes");
+    return res.status(401).json({ error: "Usuario no autenticado" });
+  }
+
   try {
+    console.log("🔍 Buscando recetas para el usuario:", req.user.id);
     const recipes = await recipeService.getRecipesByUser(req.user.id);
+    console.log("📦 Recetas encontradas:", recipes.length);
     res.json(recipes);
   } catch (error) {
     console.error("❌ Error in getMyRecipes:", error);
