@@ -1,22 +1,32 @@
 const RecipeDTO = require("../DTO/dto-recipes.dto");
 const recipeService = require("../services/recipeService");
 const { ObjectId } = require("mongodb");
+const { uploadImage } = require("../utils/cloudinary");
+const fs = require("fs");
 
 const createRecipe = async (req, res) => {
-  const recipeData = {
-    ...req.body,
-    userId: req.user.id, // Agregar ID de usuario desde el token JWT
-  };
-
-  const dto = new RecipeDTO(recipeData);
-
-  if (!dto.isValid()) {
-    return res.status(400).json({ error: "Invalid recipe data" });
-  }
-
+  let imageUrl = "";
   try {
-    const result = await recipeService.createRecipe(dto);
-    res.status(201).json({ message: "Recipe created", id: result.insertedId });
+    if (req.file) {
+      const result = await uploadImage(req.file.path);
+      imageUrl = result.secure_url;
+      fs.unlinkSync(req.file.path); // Elimina el archivo temporal
+    }
+
+    const recipeData = {
+      ...req.body,
+      userId: req.user.id,
+      imageUrl, // Guarda la URL de Cloudinary
+    };
+
+    const dto = new RecipeDTO(recipeData);
+
+    if (!dto.isValid()) {
+      return res.status(400).json({ error: "Invalid recipe data" });
+    }
+
+    const resultDb = await recipeService.createRecipe(dto);
+    res.status(201).json({ message: "Recipe created", id: resultDb.insertedId });
   } catch (error) {
     console.error("❌ Error in createRecipe:", error);
     res.status(500).json({ error: "Failed to save recipe" });
