@@ -90,7 +90,14 @@ const createRecipe = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error in createRecipe:", error);
-    res.status(500).json({ error: "Failed to save recipe" });
+    console.error("❌ Stack trace:", error.stack);
+    
+    // Enviar más detalles del error al frontend
+    res.status(500).json({ 
+      success: false,
+      error: "Ocurrió un error interno en el servidor",
+      details: error.message 
+    });
   }
 };
 
@@ -105,8 +112,9 @@ const getRecipes = async (req, res) => {
 };
 
 const getMyRecipes = async (req, res) => {
-  console.log("📝 Obteniendo recetas del usuario...");
+  console.log("📝 === GET MY RECIPES ===");
   console.log("🔑 req.user:", req.user);
+  console.log("📍 URL completa:", req.originalUrl);
 
   // ✅ Validación para evitar errores si no hay usuario autenticado
   if (!req.user || !req.user.id) {
@@ -118,10 +126,15 @@ const getMyRecipes = async (req, res) => {
     console.log("🔍 Buscando recetas para el usuario:", req.user.id);
     const recipes = await recipeService.getRecipesByUser(req.user.id);
     console.log("📦 Recetas encontradas:", recipes.length);
+    console.log("✅ Enviando respuesta exitosa");
     res.json(recipes);
   } catch (error) {
     console.error("❌ Error in getMyRecipes:", error);
-    res.status(500).json({ error: "Failed to retrieve user's recipes" });
+    console.error("❌ Stack trace:", error.stack);
+    res.status(500).json({ 
+      error: "Failed to get recipe",
+      details: error.message 
+    });
   }
 };
 

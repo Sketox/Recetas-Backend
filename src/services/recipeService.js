@@ -8,14 +8,29 @@ function setCollection(collection) {
 }
 
 async function createRecipe(data) {
-  const now = new Date();
-  const recipe = {
-    ...data,
-    createdAt: now,
-    updatedAt: now,
-  };
-  const result = await recipeCollection.insertOne(recipe);
-  return result;
+  console.log("🔍 recipeService.createRecipe - data:", data);
+  console.log("🔍 Collection disponible:", !!recipeCollection);
+  
+  if (!recipeCollection) {
+    throw new Error("Collection no está inicializada");
+  }
+  
+  try {
+    const now = new Date();
+    const recipe = {
+      ...data,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    console.log("📦 Recipe a insertar:", recipe);
+    const result = await recipeCollection.insertOne(recipe);
+    console.log("✅ Recipe insertada exitosamente:", result.insertedId);
+    return result;
+  } catch (dbError) {
+    console.error("❌ Error en base de datos al crear receta:", dbError);
+    throw dbError;
+  }
 }
 
 async function getRecipes() {
@@ -28,12 +43,33 @@ async function getRecipes() {
 }
 
 async function getRecipesByUser(userId) {
-  const recipes = await recipeCollection.find({ userId }).toArray();
-  return recipes.map((r) => ({
-    ...r,
-    id: r._id.toString(),
-    _id: undefined,
-  }));
+  console.log("🔍 recipeService.getRecipesByUser - userId:", userId);
+  console.log("🔍 Collection disponible:", !!recipeCollection);
+  
+  if (!userId) {
+    throw new Error("userId es requerido");
+  }
+  
+  if (!recipeCollection) {
+    throw new Error("Collection no está inicializada");
+  }
+  
+  try {
+    const recipes = await recipeCollection.find({ userId }).toArray();
+    console.log("📦 Recetas encontradas en DB:", recipes.length);
+    
+    const formattedRecipes = recipes.map((r) => ({
+      ...r,
+      id: r._id.toString(),
+      _id: undefined,
+    }));
+    
+    console.log("✅ Recetas formateadas:", formattedRecipes.length);
+    return formattedRecipes;
+  } catch (dbError) {
+    console.error("❌ Error en base de datos:", dbError);
+    throw dbError;
+  }
 }
 
 async function getRecipeById(id) {
