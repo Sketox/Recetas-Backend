@@ -5,8 +5,9 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 const recipeRoutes = require("./src/routes/recipes");
-const deepseekChat = require("./src/routes/deepseekChat"); // asegúrate del nombre del archivo
+const deepseekChat = require("./src/routes/deepseekChat");
 const deepseekDiet = require("./src/routes/deepseekDiet");
+const chefVoice = require("./src/routes/chef-voice"); // 👈 NUEVO
 const recipeService = require("./src/services/recipeService");
 const authRoutes = require("./src/routes/auth");
 const userRoutes = require("./src/routes/user");
@@ -27,7 +28,7 @@ const ngrokRegex = /\.ngrok(-free)?\.app$/i;
 
 const corsOptions = {
   origin(origin, cb) {
-    if (!origin) return cb(null, true); // Insomnia/Postman
+    if (!origin) return cb(null, true); // Insomnia/Postman/SSR
     if (
       allowList.has(origin) ||
       vercelRegex.test(origin) ||
@@ -48,7 +49,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions)); // preflight para cualquier ruta
+// Preflight global (evita problemas de path-to-regexp)
+app.options(/.*/, cors(corsOptions));
 
 /* ---------- Parsers ---------- */
 app.use(express.json({ limit: "2mb" }));
@@ -69,10 +71,12 @@ app.use((req, _res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/ai/chat", deepseekChat);
 app.use("/api/ai/diet", deepseekDiet);
+app.use("/api/ai/chef-voice", chefVoice); // 👈 AQUÍ SE MONTA
 app.use("/api/recipes", recipeRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/favorites", favoritesRoutes);
 
+/* ---------- Utilidades ---------- */
 app.get("/api/debug/routes", (_req, res) => {
   res.json({
     message: "Rutas disponibles",
@@ -87,6 +91,9 @@ app.get("/api/debug/routes", (_req, res) => {
       "DELETE /api/favorites/:recipeId",
       "GET /api/favorites",
       "GET /api/favorites/check/:recipeId",
+      "POST /api/ai/chat",
+      "POST /api/ai/diet",
+      "POST /api/ai/chef-voice", // 👈 listado para verificación
     ],
   });
 });
@@ -95,7 +102,7 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ status: "healthy", ts: new Date().toISOString() });
 });
 
-/* ---------- Inicio del servidor ---------- */
+/* ---------- Inicio ---------- */
 (async () => {
   try {
     const db = await connectDB();
@@ -116,7 +123,7 @@ app.get("/health", (_req, res) => {
       );
     });
 
-    // Evita aborts por timeouts cortos
+    // timeouts más generosos para llamadas a IA
     server.headersTimeout = 120_000;
     server.requestTimeout = 120_000;
   } catch (err) {
