@@ -1,51 +1,71 @@
+// index.js
 const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+
 const connectDB = require("./config/db");
 const recipeRoutes = require("./src/routes/recipes");
-const deepseekChat = require("./src/routes/deepseekChat");
+const deepseekChat = require("./src/routes/deepseekChat"); // asegúrate del nombre del archivo
 const deepseekDiet = require("./src/routes/deepseekDiet");
 const recipeService = require("./src/services/recipeService");
 const authRoutes = require("./src/routes/auth");
 const userRoutes = require("./src/routes/user");
 const favoritesRoutes = require("./src/routes/favorites");
-const cors = require("cors");
-require("dotenv").config();
 
-// Configuración inicial
 const PORT = process.env.PORT || 5000;
 const app = express();
 
-app.listen(PORT, () => {
-  console.log(`✅ Servidor corriendo en puerto ${PORT}`);
-});
+/* ---------- CORS (antes de todo) ---------- */
+const allowList = new Set([
+  "http://localhost:3000",
+  "http://192.168.56.1:3000",
+  "https://current-ant-touching.ngrok-free.app",
+  "https://cooksy-beta.vercel.app",
+]);
+const vercelRegex = /\.vercel\.app$/i;
+const ngrokRegex = /\.ngrok(-free)?\.app$/i;
 
-// ✅ CORS correcto
-app.use(
-  cors({
-    origin: "http://localhost:3000", // Cambia esto si estás en producción
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin(origin, cb) {
+    if (!origin) return cb(null, true); // Insomnia/Postman
+    if (
+      allowList.has(origin) ||
+      vercelRegex.test(origin) ||
+      ngrokRegex.test(origin)
+    ) {
+      return cb(null, true);
+    }
+    return cb(new Error(`Not allowed by CORS: ${origin}`));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "ngrok-skip-browser-warning",
+  ],
+  credentials: false,
+  optionsSuccessStatus: 204,
+};
 
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions)); // preflight para cualquier ruta
 
-// ✅ Express básico
-app.use(express.json());
+/* ---------- Parsers ---------- */
+app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// 🔍 Middleware de debug para ver qué llega
-app.use((req, res, next) => {
-  if (req.method === 'POST' && req.url.includes('/recipes')) {
-    console.log("🔍 DEBUG - Petición POST a recipes:");
-    console.log("- URL:", req.url);
-    console.log("- Headers:", req.headers);
-    console.log("- Body:", req.body);
-    console.log("- Raw body type:", typeof req.body);
+/* ---------- Debug opcional ---------- */
+app.use((req, _res, next) => {
+  if (req.method === "POST" && req.url.includes("/recipes")) {
+    console.log("🔍 POST /recipes", {
+      origin: req.headers.origin,
+      body: req.body,
+    });
   }
   next();
 });
 
-// ✅ Rutas bien separadas
+/* ---------- Rutas ---------- */
 app.use("/api/auth", authRoutes);
 app.use("/api/ai/chat", deepseekChat);
 app.use("/api/ai/diet", deepseekDiet);
@@ -53,13 +73,12 @@ app.use("/api/recipes", recipeRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/favorites", favoritesRoutes);
 
-// 🔍 Debug endpoint para ver todas las rutas
-app.get("/api/debug/routes", (req, res) => {
+app.get("/api/debug/routes", (_req, res) => {
   res.json({
     message: "Rutas disponibles",
     routes: [
       "POST /api/auth/register",
-      "POST /api/auth/login", 
+      "POST /api/auth/login",
       "GET /api/user/me",
       "GET /api/recipes",
       "POST /api/recipes",
@@ -67,68 +86,41 @@ app.get("/api/debug/routes", (req, res) => {
       "POST /api/favorites",
       "DELETE /api/favorites/:recipeId",
       "GET /api/favorites",
-      "GET /api/favorites/check/:recipeId"
-    ]
+      "GET /api/favorites/check/:recipeId",
+    ],
   });
 });
 
-// ✅ Ruta de salud
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "healthy",
-    timestamp: new Date().toISOString(),
-  });
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "healthy", ts: new Date().toISOString() });
 });
 
-// ✅ Manejo de errores
-app.use((err, req, res, next) => {
-  console.error("Error global:", err.stack);
-  res.status(500).json({
-    success: false,
-    error: "Ocurrió un error interno en el servidor",
-  });
-});
-
-// ✅ Inicialización del servidor
-const startServer = async () => {
+/* ---------- Inicio del servidor ---------- */
+(async () => {
   try {
     const db = await connectDB();
 
-    const collections = await db.listCollections().toArray();
-    console.log(
-      "📚 Colecciones disponibles:",
-      collections.map((c) => c.name)
+    const collections = (await db.listCollections().toArray()).map(
+      (c) => c.name
     );
+    console.log("📚 Colecciones:", collections);
 
-    const recipeCollection = db.collection("recipes");
-    const userCollection = db.collection("users");
-    
-    recipeService.setCollection(recipeCollection);
-    recipeService.setUserCollection(userCollection);
-    console.log("✅ Recipe collection configurada correctamente");
-    console.log("✅ User collection configurada correctamente");
+    recipeService.setCollection(db.collection("recipes"));
+    recipeService.setUserCollection(db.collection("users"));
+    console.log("✅ Recipe & User collections configuradas");
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
-      console.log(`📚 Endpoints disponibles:`);
-      console.log(`- POST /api/auth/register`);
-      console.log(`- POST /api/auth/login`);
-      console.log(`- GET /api/user/me`);
-      console.log(`- PUT /api/user/me`);
-      console.log(`- DELETE /api/user/me`);
-      console.log(`- GET /api/recipes/my-recipes`); // <-- ruta agregada correctamente
-      console.log(`- GET /api/recipes`);
-      console.log(`- POST /api/recipes`);
-      console.log(`- PUT /api/recipes/:id`);
-      console.log(`- DELETE /api/recipes/:id`);
-      console.log(`- POST /api/ai/chat`);
-      console.log(`- POST /api/ai/diet`);
-      console.log(`- GET /health`);
+    const server = app.listen(PORT, () => {
+      console.log(`🚀 Servidor en http://localhost:${PORT}`);
+      console.log(
+        "✅ CORS listo (localhost, LAN, *.ngrok-free.app, *.vercel.app)"
+      );
     });
-  } catch (error) {
-    console.error("Error al iniciar el servidor:", error);
+
+    // Evita aborts por timeouts cortos
+    server.headersTimeout = 120_000;
+    server.requestTimeout = 120_000;
+  } catch (err) {
+    console.error("Error al iniciar el servidor:", err);
     process.exit(1);
   }
-};
-
-startServer();
+})();
